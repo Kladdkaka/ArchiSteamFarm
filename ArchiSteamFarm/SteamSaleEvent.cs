@@ -46,7 +46,7 @@ namespace ArchiSteamFarm {
 
 		public void Dispose() => SteamDiscoveryQueueTimer.Dispose();
 
-		public async Task ExploreDiscoveryQueue() {
+		private async Task ExploreDiscoveryQueue() {
 			if (!Bot.IsConnectedAndLoggedOn) {
 				return;
 			}
@@ -76,6 +76,40 @@ namespace ArchiSteamFarm {
 			}
 
 			Bot.ArchiLogger.LogGenericTrace(Strings.Done);
+		}
+
+		public async Task<bool> ExploreDiscoveryQueueCommand() {
+			if (!Bot.IsConnectedAndLoggedOn) {
+				return false;
+			}
+
+			Bot.ArchiLogger.LogGenericTrace(Strings.Starting);
+
+			for (byte i = 0; (i < MaxSingleQueuesDaily) && (await IsDiscoveryQueueAvailable().ConfigureAwait(false)).GetValueOrDefault(); i++) {
+				HashSet<uint> queue = await Bot.ArchiWebHandler.GenerateNewDiscoveryQueue().ConfigureAwait(false);
+				if ((queue == null) || (queue.Count == 0)) {
+					Bot.ArchiLogger.LogGenericTrace(string.Format(Strings.ErrorIsEmpty, nameof(queue)));
+					break;
+				}
+
+				Bot.ArchiLogger.LogGenericInfo(string.Format(Strings.ClearingDiscoveryQueue, i));
+
+				// We could in theory do this in parallel, but who knows what would happen...
+				foreach (uint queuedAppID in queue) {
+					if (await Bot.ArchiWebHandler.ClearFromDiscoveryQueue(queuedAppID).ConfigureAwait(false)) {
+						continue;
+					}
+
+					Bot.ArchiLogger.LogGenericWarning(Strings.WarningFailed);
+					return false;
+				}
+
+				Bot.ArchiLogger.LogGenericInfo(string.Format(Strings.DoneClearingDiscoveryQueue, i));
+			}
+
+			Bot.ArchiLogger.LogGenericTrace(Strings.Done);
+
+			return true;
 		}
 
 		public async Task<bool?> IsDiscoveryQueueAvailable() {
