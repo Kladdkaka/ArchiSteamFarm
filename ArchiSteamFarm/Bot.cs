@@ -1252,7 +1252,7 @@ namespace ArchiSteamFarm
                         case "!UNPACK":
                             return await ResponseUnpackBoosters(steamID, Utilities.GetArgsString(args, 1, ",")).ConfigureAwait(false);
                         case "!CDQ":
-                            return await ResponseDiscoveryQueue(steamID, Utilities.GetArgsString(args, 1, ",")).ConfigureAwait(false);
+                            return await ResponseCheckDiscoveryQueue(steamID, Utilities.GetArgsString(args, 1, ",")).ConfigureAwait(false);
                         default:
                             return ResponseUnknown(steamID);
                     }
@@ -5374,7 +5374,7 @@ namespace ArchiSteamFarm
                 return FormatBotResponse(Strings.BotNotConnected);
             }
 
-            bool isAvailable = await SteamSaleEvent.IsDiscoveryQueueAvailable();
+            bool isAvailable = (bool) await SteamSaleEvent.IsDiscoveryQueueAvailable();
 
             string response = isAvailable ? "Discovery Queue is available!" : "Discovery Queue is not available.";
 

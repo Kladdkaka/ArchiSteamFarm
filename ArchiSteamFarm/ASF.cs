@@ -37,7 +37,6 @@ namespace ArchiSteamFarm {
 
 		private const string Variant = "generic";
 
-
 		internal static readonly ArchiLogger ArchiLogger = new ArchiLogger(SharedInfo.ASF);
 
 		private static readonly ConcurrentDictionary<string, DateTime> LastWriteTimes = new ConcurrentDictionary<string, DateTime>();

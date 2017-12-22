@@ -46,7 +46,7 @@ namespace ArchiSteamFarm {
 
 		public void Dispose() => SteamDiscoveryQueueTimer.Dispose();
 
-		private async Task ExploreDiscoveryQueue() {
+		public async Task ExploreDiscoveryQueue() {
 			if (!Bot.IsConnectedAndLoggedOn) {
 				return;
 			}
@@ -78,7 +78,7 @@ namespace ArchiSteamFarm {
 			Bot.ArchiLogger.LogGenericTrace(Strings.Done);
 		}
 
-		private async Task<bool?> IsDiscoveryQueueAvailable() {
+		public async Task<bool?> IsDiscoveryQueueAvailable() {
 			HtmlDocument htmlDocument = await Bot.ArchiWebHandler.GetDiscoveryQueuePage().ConfigureAwait(false);
 			if (htmlDocument == null) {
 				return null;
