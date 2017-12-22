@@ -665,6 +665,13 @@ namespace ArchiSteamFarm {
 			return 0;
 		}
 
+		internal async Task<HtmlDocument> GetSteamAwardsPage() {
+			if (!(await RefreshSessionIfNeeded().ConfigureAwait(false))) {
+				return null;
+			}
+			return await WebBrowser.UrlGetToHtmlDocumentRetry("http://store.steampowered.com/SteamAwards?l=english", null).ConfigureAwait(false);
+		}
+
 		internal async Task<byte?> GetTradeHoldDuration(ulong tradeID) {
 			if (tradeID == 0) {
 				Bot.ArchiLogger.LogNullError(nameof(tradeID));
@@ -1073,6 +1080,37 @@ namespace ArchiSteamFarm {
 			}
 
 			return true;
+		}
+
+		internal async Task<bool> SteamAwardsVote(uint voteID, uint appID) {
+			if (voteID != 0 && appID != 0) {
+				if (!await RefreshSessionIfNeeded().ConfigureAwait(false)) {
+					return false;
+				}
+				string cookieValue = WebBrowser.CookieContainer.GetCookieValue("http://store.steampowered.com", "sessionid");
+				if (string.IsNullOrEmpty(cookieValue)) {
+					Bot.ArchiLogger.LogNullError("sessionID", "SteamAwardsVote");
+					return false;
+				}
+				Dictionary<string, string> data = new Dictionary<string, string>(3)
+				{
+				{
+					"sessionid",
+					cookieValue
+				},
+				{
+					"voteid",
+					voteID.ToString()
+				},
+				{
+					"appid",
+					appID.ToString()
+				}
+			};
+				return await WebBrowser.UrlPostRetry("http://store.steampowered.com/salevote", data, null).ConfigureAwait(false);
+			}
+			Bot.ArchiLogger.LogNullError("voteID || appID", "SteamAwardsVote");
+			return false;
 		}
 
 		internal async Task<bool> UnpackBooster(uint appID, ulong itemID) {

@@ -20,6 +20,7 @@
 //  limitations under the License.
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -135,6 +136,68 @@ namespace ArchiSteamFarm {
 			// It'd make more sense to check against "Come back tomorrow", but it might not cover out-of-the-event queue
 			bool result = text.StartsWith("You can get ", StringComparison.Ordinal);
 			return result;
+		}
+
+		public async Task<bool> VoteForSteamAwards() {
+			HtmlDocument htmlDocument = await Bot.ArchiWebHandler.GetSteamAwardsPage().ConfigureAwait(false);
+			if (htmlDocument == null) {
+				Bot.ArchiLogger.LogNullError("htmlDocument", "VoteForSteamAwards");
+				return false;
+			}
+
+			HtmlNodeCollection votePanelNodes = htmlDocument.DocumentNode.SelectNodes("//div[@class='vote_nominations store_horizontal_autoslider']");
+			if (votePanelNodes == null) {
+				Bot.ArchiLogger.LogNullError("noVotePanels", "VoteForSteamAwards");
+				return false;
+			}
+
+			List<bool> successes = new List<bool>();
+
+			foreach (HtmlNode votePanelNode in votePanelNodes) {
+				HtmlNode yourVoteNode = votePanelNode.SelectSingleNode("./div[@class='vote_nomination your_vote']");
+				if (yourVoteNode == null) {
+					uint voteID;
+					if (uint.TryParse(votePanelNode.GetAttributeValue("data-voteid", (string) null), out voteID)) {
+						HtmlNodeCollection nominationNodes = votePanelNode.SelectNodes("./div[starts-with(@class, 'vote_nomination')]");
+						if (nominationNodes == null) {
+							Bot.ArchiLogger.LogNullError("voteNodes", "VoteForSteamAwards");
+							successes.Add(false);
+						} else {
+							int count = nominationNodes.Count;
+							int randomIndex = Utilities.RandomNext(count);
+
+							Bot.ArchiLogger.LogGenericInfo("nominationGamesCount", count.ToString());
+							Bot.ArchiLogger.LogGenericInfo("nominationGameRandomIndex", randomIndex.ToString());
+
+							uint appIDToVoteFor;
+
+							if (uint.TryParse(nominationNodes[randomIndex].GetAttributeValue("data-vote-appid", (string) null), out appIDToVoteFor)) {
+								Bot.ArchiLogger.LogGenericInfo("nominationVoteID", voteID.ToString());
+								Bot.ArchiLogger.LogGenericInfo("nominationAppID", appIDToVoteFor.ToString());
+
+								bool success = await Bot.ArchiWebHandler.SteamAwardsVote(voteID, appIDToVoteFor).ConfigureAwait(false);
+
+								if (success) {
+									Bot.ArchiLogger.LogGenericInfo("successVote", "voteid: " + voteID + ", appid: " + appIDToVoteFor);
+								} else {
+									Bot.ArchiLogger.LogGenericError("failedVote", "voteid: " + voteID + ", appid: " + appIDToVoteFor);
+								}
+
+								successes.Add(success);
+
+							} else {
+								Bot.ArchiLogger.LogNullError("appID", "VoteForSteamAwards");
+								successes.Add(false);
+							}
+						}
+					} else {
+						Bot.ArchiLogger.LogNullError("voteID", "VoteForSteamAwards");
+						successes.Add(false);
+					}
+				}
+			}
+
+			return successes.All(x => x);
 		}
 	}
 }
