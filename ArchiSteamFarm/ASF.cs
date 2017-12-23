@@ -35,7 +35,13 @@ namespace ArchiSteamFarm {
 	internal static class ASF {
 		private const string SourceVariant = "source";
 
+#if ASF_VARIANT_GENERIC
 		private const string Variant = "generic";
+#elif ASF_VARIANT_LINUX_X64
+		private const string Variant = "linux-x64";
+#else
+		private const string Variant = SourceVariant;
+#endif
 
 		internal static readonly ArchiLogger ArchiLogger = new ArchiLogger(SharedInfo.ASF);
 
